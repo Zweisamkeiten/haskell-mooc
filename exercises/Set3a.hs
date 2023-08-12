@@ -123,7 +123,7 @@ capitalize s = unwords (map capitalizeHelper (words s))
 --   * the function takeWhile
 
 powers :: Int -> Int -> [Int]
-powers k max = todo
+powers k max = takeWhile ((>=) max) (map ((^) k) [0..max])
 
 ------------------------------------------------------------------------------
 -- Ex 7: implement a functional while loop. While should be a function
@@ -146,7 +146,11 @@ powers k max = todo
 --     ==> Avvt
 
 while :: (a->Bool) -> (a->a) -> a -> a
-while check update value = todo
+while check update value =
+  if check value then
+    while check update (update value)
+  else
+    value
 
 ------------------------------------------------------------------------------
 -- Ex 8: another version of a while loop. This time, the check
@@ -166,7 +170,9 @@ while check update value = todo
 -- Hint! Remember the case-of expression from lecture 2.
 
 whileRight :: (a -> Either b a) -> a -> b
-whileRight check x = todo
+whileRight check x = whileRightHelper (check x)
+  where whileRightHelper (Left v) = v
+        whileRightHelper (Right v) = whileRight check v
 
 -- for the whileRight examples:
 -- step k x doubles x if it's less than k
@@ -190,7 +196,7 @@ bomb x = Right (x-1)
 -- Hint! This is a great use for list comprehensions
 
 joinToLength :: Int -> [String] -> [String]
-joinToLength = todo
+joinToLength len slist = [x ++ y | x <- slist, y <- slist, length (x ++ y) == len] 
 
 ------------------------------------------------------------------------------
 -- Ex 10: implement the operator +|+ that returns a list with the first
@@ -203,6 +209,10 @@ joinToLength = todo
 --   [1,2,3] +|+ [4,5,6]  ==> [1,4]
 --   [] +|+ [True]        ==> [True]
 --   [] +|+ []            ==> []
+(+|+) :: [a] -> [a] -> [a]
+[] +|+ y = [head y]
+x +|+ [] = [head x]
+x +|+ y = [head x] ++ [head y]
 
 
 ------------------------------------------------------------------------------
@@ -220,7 +230,10 @@ joinToLength = todo
 --   sumRights [Left "bad!", Left "missing"]         ==>  0
 
 sumRights :: [Either a Int] -> Int
-sumRights = todo
+sumRights x = sumRightsHelper x 0
+  where sumRightsHelper [] result = result
+        sumRightsHelper ((Left x):rs) result = sumRightsHelper rs result
+        sumRightsHelper ((Right x):rs) result = sumRightsHelper rs (result + x)
 
 ------------------------------------------------------------------------------
 -- Ex 12: recall the binary function composition operation
@@ -236,7 +249,8 @@ sumRights = todo
 --   multiCompose [(3*), (2^), (+1)] 0 ==> 6
 --   multiCompose [(+1), (2^), (3*)] 0 ==> 2
 
-multiCompose fs = todo
+multiCompose [] x = id x
+multiCompose fs x = multiCompose (init fs) ((last fs) x)
 
 ------------------------------------------------------------------------------
 -- Ex 13: let's consider another way to compose multiple functions. Given
@@ -257,7 +271,8 @@ multiCompose fs = todo
 --   multiApp id [head, (!!2), last] "axbxc" ==> ['a','b','c'] i.e. "abc"
 --   multiApp sum [head, (!!2), last] [1,9,2,9,3] ==> 6
 
-multiApp = todo
+multiApp fs [] x = fs []
+multiApp fs gs x = fs ([ g x | g <- gs])
 
 ------------------------------------------------------------------------------
 -- Ex 14: in this exercise you get to implement an interpreter for a
@@ -292,4 +307,14 @@ multiApp = todo
 -- function, the surprise won't work. See section 3.8 in the material.
 
 interpreter :: [String] -> [String]
-interpreter commands = todo
+interpreter commands = interpreterHelper commands 0 0 []
+  where interpreterHelper [] _ _ results = results
+        interpreterHelper commands x y results =
+          case head commands of
+            "up" -> interpreterHelper (tail commands) x (y+1) results
+            "down" -> interpreterHelper (tail commands) x (y-1) results
+            "right" -> interpreterHelper (tail commands) (x+1) y results
+            "left" -> interpreterHelper (tail commands) (x-1) y results
+            "printX" -> interpreterHelper (tail commands) x y (results ++ [show x])
+            "printY" -> interpreterHelper (tail commands) x y (results ++ [show y])
+            n -> interpreterHelper (tail commands) x y results
